@@ -67,10 +67,14 @@ python3 -m http.server 8000
 - 移动端：375px 宽可完整操作，交叉点间距不低于 34px，无横向滚动条
 - 所有提示走页面内 toast 与弹层，不使用 `alert` / `confirm` / `prompt`
 
+## 访问
+
+线上：https://zqy351.github.io/xq/
+
 ## 目录结构
 
 ```
-chinese-chess/
+xq/                       线上地址 https://zqy351.github.io/xq/
 ├── index.html            入口页（只负责 DOM 结构，不写业务逻辑）
 ├── style.css             布局、面板、按钮、弹层、toast
 ├── README.md
