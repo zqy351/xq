@@ -553,25 +553,37 @@
     /* 3) 走子动画中的棋子位置表（避免重复绘制） */
     var animMap = this._animPositions(now);
 
-    /* 4) 被将军的将/帅位置闪红 */
+    /* 4) 被将军的将/帅位置闪红（findKing 返回 {c,r}，任何异常都不得影响后续绘制） */
     if (state.checkSide) {
-      var kp = R.findKing(state.board, state.checkSide);
-      if (kp) {
-        var kx = this.point(kp.col, kp.row);
-        var pulse = 0.42 + Math.sin(now / 260) * 0.24;
-        var gr = ctx.createRadialGradient(kx.x, kx.y, t * 0.15, kx.x, kx.y, t * 0.62);
-        gr.addColorStop(0, 'rgba(200,40,30,' + (pulse * 0.85) + ')');
-        gr.addColorStop(1, 'rgba(200,40,30,0)');
-        ctx.fillStyle = gr;
-        ctx.beginPath();
-        ctx.arc(kx.x, kx.y, t * 0.62, 0, Math.PI * 2);
-        ctx.fill();
+      try {
+        var kp = R.findKing(state.board, state.checkSide);
+        if (kp) {
+          var kc = kp.c;
+          var kr = kp.r;
+          var kx = this.point(kc, kr);
+          if (isFinite(kx.x) && isFinite(kx.y)) {
+            var pulse = 0.42 + Math.sin(now / 260) * 0.24;
+            var gr = ctx.createRadialGradient(kx.x, kx.y, t * 0.15, kx.x, kx.y, t * 0.62);
+            gr.addColorStop(0, 'rgba(200,40,30,' + (Math.min(0.85, Math.max(0, pulse)) * 0.85) + ')');
+            gr.addColorStop(1, 'rgba(200,40,30,0)');
+            ctx.fillStyle = gr;
+            ctx.beginPath();
+            ctx.arc(kx.x, kx.y, t * 0.62, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } catch (e1) {
+        if (typeof console !== 'undefined') { console.warn('check glow skipped:', e1 && e1.message); }
       }
     }
 
-    /* 5) 合法落点提示 */
+    /* 5) 合法落点提示（异常隔离，避免拖垮整帧） */
     if (state.legalTargets && state.legalTargets.length) {
-      this._drawLegalTargets(ctx, state.legalTargets, state.board);
+      try {
+        this._drawLegalTargets(ctx, state.legalTargets, state.board);
+      } catch (e2) {
+        if (typeof console !== 'undefined') { console.warn('legal targets skipped:', e2 && e2.message); }
+      }
     }
 
     /* 6) 棋子（按屏幕 y 排序，动画中重叠时更自然） */
@@ -597,7 +609,12 @@
     }
     drawList.sort(function (a, b) { return a.y - b.y; });
     for (var i = 0; i < drawList.length; i++) {
-      this._drawPiece(ctx, drawList[i]);
+      /* 单个棋子绘制失败不影响其余棋子 */
+      try {
+        this._drawPiece(ctx, drawList[i]);
+      } catch (e3) {
+        if (typeof console !== 'undefined') { console.warn('piece skipped:', e3 && e3.message); }
+      }
     }
 
     /* 7) 选中光晕（画在棋子之上增强表现） */
