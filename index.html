@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171a1e">
+<title>中国象棋 · 双人同屏 / 人机对战</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e8cb96'/%3E%3Ccircle cx='32' cy='30' r='21' fill='%23fffdf6' stroke='%236b4a25' stroke-width='2'/%3E%3Ctext x='32' y='39' font-family='KaiTi,STKaiti,serif' font-size='26' font-weight='bold' text-anchor='middle' fill='%23a5211b'%3E%E5%B8%A5%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://miaoda.feishu.cn" crossorigin>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <main id="boardWrap" aria-label="棋盘区域">
+    <canvas id="board" width="440" height="484" role="img"
+            aria-label="中国象棋棋盘，点击棋子选中，点击落点走子"></canvas>
+  </main>
+
+  <aside id="panel" class="panel" aria-label="对局信息面板">
+
+    <header class="brand">
+      <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.55"/>
+        <circle cx="24" cy="24" r="15.5" fill="none" stroke="currentColor" stroke-width="1" opacity="0.32"/>
+        <text x="24" y="31" text-anchor="middle" font-size="18" font-weight="700"
+              font-family="KaiTi,STKaiti,'Kaiti SC',serif" fill="currentColor">棋</text>
+      </svg>
+      <div class="brand-text">
+        <h1>中国象棋</h1>
+        <p>双人同屏 · 人机对战</p>
+      </div>
+    </header>
+
+    <div id="turnBar" class="turnbar is-red">
+      <span class="dot red" id="dotRed" aria-hidden="true"></span>
+      <span id="turnText">红方行棋</span>
+      <span class="dot black" id="dotBlack" aria-hidden="true"></span>
+    </div>
+
+    <div id="clockRow" class="clockrow" style="display:none">
+      <div class="clock">
+        <span class="c-label red">红</span>
+        <span id="redClock">10:00</span>
+      </div>
+      <div class="clock">
+        <span class="c-label black">黑</span>
+        <span id="blackClock">10:00</span>
+      </div>
+    </div>
+
+    <div id="aiThinking" class="thinking">AI 正在思考…</div>
+
+    <div class="seg" role="group" aria-label="对战模式">
+      <button type="button" data-mode="pvp" class="active">双人同屏</button>
+      <button type="button" data-mode="pve">人机对战</button>
+    </div>
+
+    <div id="pveOpts" class="pve-opts" style="display:none">
+      <div class="seg small" role="group" aria-label="AI 难度">
+        <button type="button" data-level="easy">简单</button>
+        <button type="button" data-level="normal" class="active">普通</button>
+        <button type="button" data-level="hard">困难</button>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="optAiRed">
+        <span>AI 执红先行</span>
+      </label>
+    </div>
+
+    <div class="btnrow">
+      <button type="button" id="btnNew" class="btn primary">新局</button>
+      <button type="button" id="btnUndo" class="btn">悔棋</button>
+    </div>
+
+    <div class="btnrow">
+      <button type="button" id="btnFlip" class="btn">自动翻转</button>
+      <button type="button" id="btnSound" class="btn on">音效</button>
+      <button type="button" id="btnClock" class="btn">计时</button>
+    </div>
+
+    <section id="recordBox" class="record">
+      <div class="record-head">
+        <h2>走棋记录</h2>
+        <button type="button" id="recordToggle" class="linkbtn">收起记录</button>
+      </div>
+      <ol id="recordList" class="record-list" aria-live="polite">
+        <li class="record-empty">尚无走子记录</li>
+      </ol>
+    </section>
+
+    <p class="hint">点击己方棋子选中，再点落点走子。快捷键：N 新局 · U 悔棋 · F 翻转。</p>
+  </aside>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <h3 id="modalTitle">提示</h3>
+    <div id="modalBody" class="modal-body"></div>
+    <div class="modal-actions">
+      <button type="button" id="modalCancel" class="btn">取消</button>
+      <button type="button" id="modalOk" class="btn primary">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="src/namespace.js"></script>
+<script src="src/rules.js"></script>
+<script src="src/game.js"></script>
+<script src="src/render.js"></script>
+<script src="src/ai.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/ui.js"></script>
+</body>
+</html>
