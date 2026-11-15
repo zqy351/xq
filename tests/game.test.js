@@ -121,5 +121,36 @@ eq(g8.board[0][9], null, '实时棋盘已更新');
 g8.restore(snap);
 eq(g8.board[0][9], 'R', '恢复快照后棋子回到原位');
 
+/* ---------- 9. 长将判负（三次重复且全程将军的一方判负） ---------- */
+var g9 = Chess.createGame();
+g9.board = R.emptyBoard();
+g9.board[4][0] = 'k';   /* 黑将 */
+g9.board[0][9] = 'K';   /* 红帅 */
+g9.board[4][2] = 'R';   /* 红车，正在将军 */
+g9.side = 'b';          /* 黑方被将，先行躲避 */
+g9.positionCounts = {};
+g9.positionFirst = {};
+var startKey = R.positionKey(g9.board, 'b');
+g9.positionCounts[startKey] = 1;
+g9.positionFirst[startKey] = 0;
+ok(R.inCheck(g9.board, 'b'), '长将构造：黑方确实被将军');
+var loop9 = [[4, 0, 5, 0], [4, 2, 5, 2], [5, 0, 4, 0], [5, 2, 4, 2]];
+for (i = 0; i < 8; i++) {
+  var r9 = g9.applyMove(loop9[i % 4]);
+  if (!r9.ok || g9.status !== G.PLAYING) { break; }
+}
+eq(g9.status, G.BLACK_WIN, '红方长将判负 → 黑方胜');
+ok(/长将/.test(g9.reason || ''), '结束原因是长将', g9.reason);
+
+/* ---------- 10. 往返缠斗但不将军 → 判和 ---------- */
+var g10 = Chess.createGame();
+var loop10 = [[0, 9, 0, 8], [0, 0, 0, 1], [0, 8, 0, 9], [0, 1, 0, 0]];
+for (i = 0; i < 8; i++) {
+  var r10 = g10.applyMove(loop10[i % 4]);
+  if (!r10.ok || g10.status !== G.PLAYING) { break; }
+}
+eq(g10.status, G.DRAW, '不将军的三次重复判和');
+ok(/重复/.test(g10.reason || ''), '结束原因是三次重复', g10.reason);
+
 console.log('\n==== 对局自测：通过 ' + pass + ' 项，失败 ' + fail + ' 项 ====');
 process.exit(fail ? 1 : 0);

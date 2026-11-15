@@ -152,13 +152,15 @@
       return;
     }
 
+    var inCheckNow = state.checkSide === g.side;
     if (g.side === 'r') {
       bar.classList.add('is-red');
-      txt.textContent = '红方行棋';
+      txt.textContent = inCheckNow ? '红方行棋 · 被将军' : '红方行棋';
     } else {
       bar.classList.add('is-black');
-      txt.textContent = '黑方行棋';
+      txt.textContent = inCheckNow ? '黑方行棋 · 被将军' : '黑方行棋';
     }
+    if (inCheckNow) { bar.classList.add('is-check'); }
     if (dotR) { dotR.classList.toggle('active', g.side === 'r'); }
     if (dotB) { dotB.classList.toggle('active', g.side === 'b'); }
 
@@ -316,6 +318,12 @@
     clearSelection();
     state.checkSide = res.check ? g.side : null;
     if (res.check && !res.mate && Chess.Audio.isEnabled()) { Chess.Audio.alert(); }
+    if (res.check && !res.mate && g.status === Chess.Game.PLAYING) {
+      toast((g.side === 'r' ? '红方' : '黑方') + '被将军，必须应将', 'error');
+    }
+    if (res.longCheck) {
+      toast((res.longCheck === 'r' ? '红方' : '黑方') + '长将判负', 'error');
+    }
 
     /* 锁住输入，等动画结束 */
     state.lockUntil = Date.now() + (opts.instant ? 60 : 240);
@@ -363,6 +371,13 @@
     }
     if (g.reason) {
       body += '<p class="modal-reason">' + g.reason + '</p>';
+    }
+    if (/长将/.test(g.reason || '')) {
+      body += '<p class="modal-tip">连续将军逼成三次重复局面，按规则判长将方负。</p>';
+    } else if (/绝杀/.test(g.reason || '')) {
+      body += '<p class="modal-tip">被将军且无任何合法应将走法。</p>';
+    } else if (/困毙/.test(g.reason || '')) {
+      body += '<p class="modal-tip">未被将军，但已无合法走法。</p>';
     }
     body += '<p class="modal-tip">共 ' + g.moves.length + ' 个半回合</p>';
     if (Chess.Audio.isEnabled()) { Chess.Audio.win(); }

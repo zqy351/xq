@@ -43,6 +43,7 @@
     this.moves = [];              /* 走法记录（含吃子、将军标记） */
     this.lastMove = null;         /* [fc,fr,tc,tr] */
     this.positionCounts = {};     /* 局面字符串 -> 出现次数 */
+    this.positionFirst = {};      /* 局面字符串 -> 首次出现时的半回合数（长将判定用） */
     this.noCaptureHalf = 0;       /* 连续无吃子半回合数 */
     this.redTime = this.clockInitMs;
     this.blackTime = this.clockInitMs;
@@ -56,6 +57,7 @@
   Game.prototype._seedCount = function _seedCount() {
     var key = R.positionKey(this.board, this.side);
     this.positionCounts[key] = 1;
+    this.positionFirst[key] = 0;
   };
 
   /** 当前局面键 */
@@ -71,7 +73,14 @@
         counts[k] = this.positionCounts[k];
       }
     }
+    var firsts = {};
+    for (var fk in this.positionFirst) {
+      if (Object.prototype.hasOwnProperty.call(this.positionFirst, fk)) {
+        firsts[fk] = this.positionFirst[fk];
+      }
+    }
     return {
+      positionFirst: firsts,
       board: R.cloneBoard(this.board),
       side: this.side,
       status: this.status,
@@ -100,6 +109,13 @@
     for (var k in snap.positionCounts) {
       if (Object.prototype.hasOwnProperty.call(snap.positionCounts, k)) {
         this.positionCounts[k] = snap.positionCounts[k];
+      }
+    }
+    this.positionFirst = {};
+    var pf = snap.positionFirst || {};
+    for (var k2 in pf) {
+      if (Object.prototype.hasOwnProperty.call(pf, k2)) {
+        this.positionFirst[k2] = pf[k2];
       }
     }
     this.noCaptureHalf = snap.noCaptureHalf;
@@ -170,7 +186,9 @@
 
     /* 重复局面计数（走后新局面的出现次数） */
     var nk = R.positionKey(this.board, this.side);
-    this.positionCounts[nk] = (this.positionCounts[nk] || 0) + 1;
+    var seen = this.positionCounts[nk] || 0;
+    this.positionCounts[nk] = seen + 1;
+    if (seen === 0) { this.positionFirst[nk] = this.moves.length; }
 
     var result = {
       ok: true,
@@ -204,11 +222,19 @@
       return result;
     }
 
-    /* ---- 三次重复判和 ---- */
+    /* ---- 三次重复：先判长将（长将方负），否则判和 ---- */
     if (this.positionCounts[nk] >= 3) {
-      this.status = G.DRAW;
-      this.winner = null;
-      this.reason = '三次重复局面';
+      var longSide = this._detectLongCheck(nk);
+      if (longSide) {
+        this.status = longSide === 'r' ? G.BLACK_WIN : G.RED_WIN;
+        this.winner = R.other(longSide);
+        this.reason = (longSide === 'r' ? '红方' : '黑方') + '长将判负';
+        result.longCheck = longSide;
+      } else {
+        this.status = G.DRAW;
+        this.winner = null;
+        this.reason = '三次重复局面';
+      }
       result.result = this.status;
       result.check = oppInCheck;
       this._stopClock();
@@ -229,6 +255,31 @@
     result.check = oppInCheck;
     result.result = this.status;
     return result;
+  };
+
+  /**
+   * 长将判定：三次重复的周期内，某一方每一步都在将军 → 该方长将
+   * @returns {'r'|'b'|null} 长将方；双方都长将或都不长将则为 null（判和）
+   */
+  Game.prototype._detectLongCheck = function _detectLongCheck(key) {
+    var start = this.positionFirst[key];
+    if (start === undefined) { return null; }
+    var rTotal = 0, rChk = 0, bTotal = 0, bChk = 0;
+    for (var i = start; i < this.moves.length; i++) {
+      var m = this.moves[i];
+      if (m.side === 'r') {
+        rTotal += 1;
+        if (m.check) { rChk += 1; }
+      } else {
+        bTotal += 1;
+        if (m.check) { bChk += 1; }
+      }
+    }
+    var rLong = rTotal >= 2 && rChk === rTotal;
+    var bLong = bTotal >= 2 && bChk === bTotal;
+    if (rLong && !bLong) { return 'r'; }
+    if (bLong && !rLong) { return 'b'; }
+    return null;
   };
 
   /**
